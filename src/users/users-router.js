@@ -1,110 +1,55 @@
-const path = require('path')
 const express = require('express')
-const xss = require('xss')
+const path = require('path')
 const UsersService = require('./users-service')
 
 const usersRouter = express.Router()
-const jsonParser = express.json()
-
-const serializeUser = user => ({
-    id: user.id,
-    username: xss(user.username),
-    password: xss(user.password),
-})
+const jsonBodyParser = express.json()
 
 usersRouter
-    .route('/')
-    .get((req, res, next) => {
-        const knexInstance = req.app.get('db')
-        UsersService.getAllUsers(knexInstance)
-            .then(users => {
-                res.json(users.map(serializeUser))
-            })
-            .catch(next)
-    })
+    .post('/', jsonBodyParser, (req, res, next) => {
+        const { password, username } = req.body
 
-    .post(jsonParser, (req, res, next) => {
-        const { username, password } = req.body
-        const newUser = { username, password }
-
-        for (const [key, value] of Object.entries(newUser)) {
-            if (value == null) {
+        for (const field of ['username', 'password'])
+            if (!req.body[field])
                 return res.status(400).json({
-                    error: { message: `Missing '${key}' in request body` }
+                    error: `Missing '${field}' in request body`
                 })
-            }
-        }
 
-        UsersService.insertUser(
-            req.app.get('db'),
-            newUser
-        )
-            .then(user => {
-                res
-                    .status(201)
-                    .location(path.posix.join(req.originalUrl, `/${user.id}`))
-                    .json(user)
-            })
-            .catch(next)
-    })
+        // TODO: check username doesn't start with spaces
 
-usersRouter
-    .route('/:userId')
-    .all((req, res, next) => {
-        UsersService.getById(
+        const passwordError = UsersService.validatePassword(password)
+
+        if (passwordError)
+            return res.status(400).json({ error: passwordError })
+
+        UsersService.hasUserWithUserName(
             req.app.get('db'),
-            req.params.userId
+            username
         )
-            .then(user => {
-                if (!user) {
-                    return res.status(404).json({
-                        error: { message: `user doesn't exist` }
+            .then(hasUserWithUserName => {
+                if (hasUserWithUserName)
+                    return res.status(400).json({ error: `Username already taken` })
+
+                return UsersService.hashPassword(password)
+                    .then(hashedPassword => {
+                        const newUser = {
+                            username,
+                            password: hashedPassword,
+                        }
+
+                        return UsersService.insertUser(
+                            req.app.get('db'),
+                            newUser
+                        )
+                            .then(user => {
+                                res
+                                    .status(201)
+                                    .location(path.posix.join(req.originalUrl, `/${user.id}`))
+                                    .json(UsersService.serializeUser(user))
+                            })
                     })
-                }
-                res.user = user
-                next()
             })
             .catch(next)
     })
-
-    .get((req, res, next) => {
-        res.json(serializeUser(res.user))
-    })
-
-    .delete((req, res, next) => {
-        UsersService.deleteUser(
-            req.app.get('db'),
-            req.params.userId
-        )
-            .then(numRowsAffected => {
-                res.status(204).end()
-            })
-            .catch(next)
-    })
-
-    .patch(jsonParser, (req, res, next) => {
-        const { username, password } = req.body
-        const userToUpdate = { username, password }
-
-        const numberOfValues = Object.values(userToUpdate).filter(Boolean).length
-        if (numberOfValues === 0)
-            return res.status(400).json({
-                error: {
-                    message: `Request body must contain 'username, password'`
-                }
-            })
-
-        UsersService.updateUser(
-            req.app.get('db'),
-            req.params.userId,
-            userToUpdate
-        )
-            .then(numRowsAffected => {
-                res.status(204).end()
-            })
-            .catch(next)
-    })
-
-
 
 module.exports = usersRouter

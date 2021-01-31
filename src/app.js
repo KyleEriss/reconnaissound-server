@@ -6,6 +6,7 @@ const helmet = require('helmet')
 const { NODE_ENV } = require('./config')
 const usersRouter = require('./users/users-router')
 const authRouter = require('./auth/auth-router')
+const playlistRouter = require('./playlists/playlists-router')
 
 const app = express()
 
@@ -19,6 +20,7 @@ app.use(cors())
 
 app.use('/users', usersRouter)
 app.use('/auth', authRouter)
+app.use('/playlists', playlistRouter)
 
 
 app.get('/', (req, res) => {
