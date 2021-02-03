@@ -6,7 +6,7 @@ const PlaylistsService = {
             .from('reconnaissound_playlists AS vidlist')
             .select(
                 'vidlist.id',
-                'vidlist.embedvideo',
+                'vidlist.videoid',
                 'vidlist.videotitle'
             )
             .where('vidlist.id', id)
@@ -15,13 +15,19 @@ const PlaylistsService = {
 
     getPlaylistByUser(db, userId) {
         return db
-            .from('reconnaissound_playlists')
+            .from('reconnaissound_playlists AS vidlist')
             .select(
-                'id',
-                'embedvideo',
-                'videotitle'
+                'vidlist.id',
+                'vidlist.videoid',
+                'vidlist.videotitle'
             )
             .where('userid', userId)
+    },
+
+    deleteVideo(db, id) {
+        return db('reconnaissound_playlists')
+            .where({ id })
+            .delete();
     },
 
     insertVideo(db, newVideo) {
@@ -39,7 +45,7 @@ const PlaylistsService = {
         const { user } = video
         return {
             id: video.id,
-            embedvideo: xss(video.embedvideo),
+            videoid: xss(video.videoid),
             videotitle: xss(video.videotitle),
             // user: {
             //     id: user.id,

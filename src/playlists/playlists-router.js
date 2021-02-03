@@ -9,19 +9,22 @@ const jsonParser = express.json()
 
 playlistRouter
     .route('/')
-    // .get((req, res, next) => {
-    //     const knexInstance = req.app.get('db')
-    //     PlaylistsService.getAllvideos(knexInstance)
-    //         .then(videos => {
-    //             res.json(videos.map(serializeVideo))
-    //         })
-    //         .catch(next)
-    // })
+    .get(requireAuth, jsonParser, (req, res, next) => {
+        const userId = req.user.id
+        PlaylistsService.getPlaylistByUser(
+            req.app.get('db'),
+            userId
+        )
+            .then(videos => {
+                res.json(videos.map(PlaylistsService.serializeVideo))
+            })
+            .catch(next)
+    })
 
     .post(requireAuth, jsonParser, (req, res, next) => {
-        const { embedvideo, videotitle } = req.body
+        const { videoid, videotitle } = req.body
         const userId = req.user.id
-        const newvideo = { embedvideo, videotitle }
+        const newvideo = { videoid, videotitle }
 
         for (const [key, value] of Object.entries(newvideo))
             if (value == null)
@@ -43,37 +46,37 @@ playlistRouter
             .catch(next)
     })
 
-    // playlistRouter
-    // .route('/:videoId')
-    // .all((req, res, next) => {
-    //     PlaylistsService.getById(
-    //         req.app.get('db'),
-    //         req.params.videoId
-    //     )
-    //         .then(video => {
-    //             if (!video) {
-    //                 return res.status(404).json({
-    //                     error: { message: `video doesn't exist` }
-    //                 })
-    //             }
-    //             res.video = video 
-    //             next() 
-    //         })
-    //         .catch(next)
-    // })
-    // .get((req, res, next) => {
+playlistRouter
+    .route('/:videoId')
+    .all(requireAuth, jsonParser, (req, res, next) => {
+        PlaylistsService.getVideoById(
+            req.app.get('db'),
+            req.params.videoId
+        )
+            .then(video => {
+                if (!video) {
+                    return res.status(404).json({
+                        error: { message: `video doesn't exist` }
+                    })
+                }
+                res.video = video
+                next()
+            })
+            .catch(next)
+    })
+    // .get(requireAuth, jsonParser, (req, res, next) => {
     //     res.json(serializeVideo(res.video))
     // })
-    // .delete((req, res, next) => {
-    //     PlaylistsService.deletevideo(
-    //         req.app.get('db'),
-    //         req.params.videoId
-    //     )
-    //         .then(() => {
-    //             res.status(204).end()
-    //         })
-    //         .catch(next)
-    // })
+    .delete(requireAuth, jsonParser, (req, res, next) => {
+        PlaylistsService.deleteVideo(
+            req.app.get('db'),
+            req.params.videoId
+        )
+            .then(() => {
+                res.status(204).end()
+            })
+            .catch(next)
+    })
 
     // .patch(jsonParser, (req, res, next) => {
     //     const { userid, embedvideo, videotitle } = req.body
