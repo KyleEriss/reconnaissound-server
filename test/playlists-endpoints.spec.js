@@ -9,3 +9,7 @@ describe('playlists path', () => {
             .expect(401)
     })
 })
+
+// const token = helpers.getAuthToken(1, 'testuser');
+
+// return supertest(app) .get('/api/movies') .set('Authorization', Bearer ${token}) .expect(200);
