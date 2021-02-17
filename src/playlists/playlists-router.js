@@ -64,9 +64,7 @@ playlistRouter
             })
             .catch(next)
     })
-    // .get(requireAuth, jsonParser, (req, res, next) => {
-    //     res.json(serializeVideo(res.video))
-    // })
+    
     .delete(requireAuth, jsonParser, (req, res, next) => {
         PlaylistsService.deleteVideo(
             req.app.get('db'),
@@ -77,29 +75,5 @@ playlistRouter
             })
             .catch(next)
     })
-
-    // .patch(jsonParser, (req, res, next) => {
-    //     const { userid, embedvideo, videotitle } = req.body
-    //     const videoToUpdate = { userid, embedvideo, videotitle }
-
-    //     const numberOfValues = Object.values(videoToUpdate).filter(Boolean).length
-    //     if (numberOfValues === 0) {
-    //         return res.status(400).json({
-    //             error: {
-    //                 message: `Request body must contain  'user id'and 'video url'`
-    //             }
-    //         })
-    //     }
-
-    //     PlaylistsService.updatevideo(
-    //         req.app.get('db'),
-    //         req.params.videoId,
-    //         videoToUpdate
-    //     )
-    //         .then(numRowsAffected => {
-    //             res.status(204).end()
-    //         })
-    //         .catch(next)
-    // })
 
 module.exports = playlistRouter
