@@ -1,6 +1,7 @@
 const express = require('express')
 const path = require('path')
 const UsersService = require('./users-service')
+const AuthService = require('../auth/auth-service')
 
 const usersRouter = express.Router()
 const jsonBodyParser = express.json()
@@ -14,8 +15,8 @@ usersRouter
                 return res.status(400).json({
                     error: `Missing '${field}' in request body`
                 })
-                
-        const passwordError = UsersService.validatePassword(password)
+
+        const passwordError = UsersService.validatePassword(username, password)
 
         if (passwordError)
             return res.status(400).json({ error: passwordError })
@@ -40,7 +41,12 @@ usersRouter
                             newUser
                         )
                             .then(user => {
+                                const sub = user.username
+                                const payload = { user_id: user.id }
                                 res
+                                    .send({
+                                        authToken: AuthService.createJwt(sub, payload),
+                                    })
                                     .status(201)
                                     .location(path.posix.join(req.originalUrl, `/${user.id}`))
                                     .json(UsersService.serializeUser(user))
